@@ -1,10 +1,40 @@
-strategy:
-  matrix:
-    Python35:
-      PYTHON_VERSION: '3.5'
-    Python36:
-      PYTHON_VERSION: '3.6'
-    Python37:
-      PYTHON_VERSION: '3.7'
+name: docker-build-matrix
+trigger:
+- 'basic-setup'
+variables:
+    dockerRegistryEndpoint: http://localhost:5000
 
+jobs:
+- job : Job1
+  displayName: docker build and tag for py versions
+  workspace:
+    clean: outputs
+  strategy:
+    matrix:
+      Python35:
+        PYTHON_VERSION: '3.5'
+        containerImage: ubuntu:16.04
+      Python36:
+        PYTHON_VERSION: '3.6'
+        containerImage: ubuntu:16.04
+      Python37:
+        PYTHON_VERSION: '3.7'
+        containerImage: ubuntu:16.04
+
+  steps:
+    - script: printf "PYTHON_VERSION:" ; printf ${PYTHON_VERSION}"
+    - script: printenv
+    - task: Docker@1
+      displayName: docker build
+      inputs:
+        command: build
+        dockerFile: ./Dockerfile
+        dockerRegistryEndpoint: $(dockerRegistryEndpoint)
+    - task: Docker@1
+      displayName: docker build
+      inputs:
+        command: tag
+        dockerRegistryEndpoint: $(dockerRegistryEndpoint)
+        arguments: "latest"
+        
 
