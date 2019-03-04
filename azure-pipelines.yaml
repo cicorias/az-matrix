@@ -1,56 +1,43 @@
 name: docker-build-matrix
 trigger:
 - 'basic-setup'
+- 'windows-too'
 
 variables:
     dockerRegistryEndpoint: localhost:5000
     imageName: az-matrix
 
 jobs:
-- job : docker_build
-  displayName: docker build and tag for py versions
-  workspace:
-    clean: outputs
-  strategy:
-    matrix:
-      Python35:
-        PYTHON_VERSION: 'python3.5'
-        containerImage: ubuntu:16.04
-      Python36:
-        PYTHON_VERSION: 'python3.6'
-        containerImage: ubuntu:16.04
-      Python37:
-        PYTHON_VERSION: 'python3.7'
-        containerImage: ubuntu:16.04
-        isLatest: 'true'
+- template: build.yaml
+  parameters:
+    name: Linux
 
-  steps:
-    - script: printenv | sort
-      displayName: Dumps and sorts env variables
 
-    - script: |
-        export PKG_VERSION=$(python3 -c 'import foobar; print(foobar.__version__)'); \
-        export PKG_NAME=${PYTHON_VERSION}-${PKG_VERSION}; \
-        echo "##vso[task.setvariable variable=packageVersion;isOutput=true]${PKG_VERSION}"
-        echo "##vso[task.setvariable variable=packageBasename;isOutput=true]${PKG_NAME}"
-      name: packageName
-      workingDirectory: ./src
-      failOnStderr: true
-      displayName: Generate package and basenames
 
-    - script: |
-        docker build -t "$(imageName):$(packageName.packageBasename)" -f ./Dockerfile .
-        docker tag "$(imageName):$(packageName.packageBasename)" "$(dockerRegistryEndpoint)/$(imageName):$(packageName.packageBasename)"
-        docker push $(dockerRegistryEndpoint)/$(imageName):$(packageName.packageBasename)
 
-        if [[ "${ISLATEST}" = "true" ]]; then \
-          printf "this is the LATEST"; \
-          docker tag "$(imageName):$(packageName.packageBasename)" "$(imageName):latest"
-          docker tag "$(imageName):latest" "$(dockerRegistryEndpoint)/$(imageName):latest"; \
-          docker push "$(dockerRegistryEndpoint)/$(imageName):latest"; \
-        else \
-          printf "not the LATEST"; \
-        fi
-      failOnStderr: true
-      displayName: Docker tag and push with registry
 
+# - job : docker_build
+
+#   displayName: docker build and tag for py versions
+#   workspace:
+#     clean: outputs
+#   strategy:
+#     matrix:
+#       # Python35:
+#       #   PYTHON_VERSION: 'python3.5'
+#       #   containerImage: ubuntu:16.04
+#       #   os: Linux
+#       # Python36:
+#       #   PYTHON_VERSION: 'python3.6'
+#       #   containerImage: ubuntu:16.04
+#       #   os: Linux
+#       Python37:
+#         PYTHON_VERSION: 'python3.7'
+#         containerImage: ubuntu:16.04
+#         os: Linux
+#         isLatest: 'true'
+
+#   steps:
+#     - template: azure-pipelines.steps.yaml
+#       parameters:
+#         os: Linux
