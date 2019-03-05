@@ -8,36 +8,30 @@ variables:
     imageName: az-matrix
 
 jobs:
-- template: build.yaml
+- job: prerun
+  displayName: Job preparation and expansion
+  steps:
+    - script: |
+        PKG_VERSION=$(python3 -c 'import foobar; print(foobar.__version__)'); \
+        PKG_NAME=${PYTHON_VERSION}-${PKG_VERSION}; \
+        echo "##vso[task.setvariable variable=packageVersion;isOutput=true]${PKG_VERSION}"
+        echo "##vso[task.setvariable variable=packageBasename;isOutput=true]${PKG_NAME}"
+      name: setSharedVariables
+      workingDirectory: ./src
+      failOnStderr: true
+      displayName: Generate package and basenames
+
+- template: ./azure-pipelines.job.yaml
   parameters:
     name: Linux
+    vmImage: ubuntu-16.04
+    pyContainerSuffix: '-alpine'
+    # 3.72-alpine38
 
+- template: ./azure-pipelines.job.yaml
+  parameters:
+    name: Windows
+    vmImage: win1803
+    pyContainerSuffix: '-windowsservercore-1803'
+    # 3.6-windowsservercore-1803
 
-
-
-
-# - job : docker_build
-
-#   displayName: docker build and tag for py versions
-#   workspace:
-#     clean: outputs
-#   strategy:
-#     matrix:
-#       # Python35:
-#       #   PYTHON_VERSION: 'python3.5'
-#       #   containerImage: ubuntu:16.04
-#       #   os: Linux
-#       # Python36:
-#       #   PYTHON_VERSION: 'python3.6'
-#       #   containerImage: ubuntu:16.04
-#       #   os: Linux
-#       Python37:
-#         PYTHON_VERSION: 'python3.7'
-#         containerImage: ubuntu:16.04
-#         os: Linux
-#         isLatest: 'true'
-
-#   steps:
-#     - template: azure-pipelines.steps.yaml
-#       parameters:
-#         os: Linux

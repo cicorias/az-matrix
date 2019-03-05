@@ -1,0 +1,62 @@
+parameters:
+  name: ''
+  vmImage: ''
+  containerImage: ''
+  pyContainerSuffix: ''
+
+
+jobs:
+- job: ${{ parameters.name }}
+  dependsOn: prerun
+  pool:
+    vmImage: ${{ parameters.vmImage }}
+
+  variables:
+    packageVersion: $[ dependencies.prerun.outputs['setSharedVariables.packageVersion'] ]
+    packageBasename: $[ dependencies.prerun.outputs['setSharedVariables.packageBasename'] ]
+
+  strategy:
+    maxParallel: 6
+    matrix:
+      Python35:
+        PYTHON_VERSION: '3.5'
+      Python36:
+        PYTHON_VERSION: '3.6'
+      Python37:
+        PYTHON_VERSION: '3.7'
+        isLatest: 'true'
+
+
+  steps:
+  - script: printenv | sort
+    name: dumpvarsbegin
+    displayName: Dumps and sorts env variables
+
+  - powershell: |
+      echo "env"
+      echo $env:PKG_NAME
+      echo $env:PKG_VERSION
+      echo "variables"
+      echo $(packageVersion)
+      echo $(packageBasename)
+      echo $env:PYTHON_VERSION${{parameters.pyContainerSuffix}}
+
+      echo "##vso[task.setvariable variable=pythonImage;isOutput=true]python:$env:PYTHON_VERSION${{parameters.pyContainerSuffix}}"
+    name: stepVariables
+    workingDirectory: ./src
+    failOnStderr: true
+    displayName: Generate package and basenames
+
+  - script: printenv | sort
+    name: dumpvarsend
+    displayName: Dumps and sorts env variables - end of job
+
+  - powershell: |
+      if ( $env:SYSTEM_JOBIDENTIFIER -ne "Windows.Python35" ) { `
+        docker run $(stepVariables.pythonImage) python -V `
+      }
+      
+    name: dockerrun
+    displayName: Run the container name and get the python version except Windows.Python35
+
+
